@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <title>Dashboard de Órdenes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: white;
+            padding: 2rem;
+        }
+
+
+
+
+
+
+
+
+
+                .button-container {
+            display: flex;
+            gap: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        }
+        
+        .button {
+            padding: 15px 35px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+        
+        .button:hover::before {
+            left: 100%;
+        }
+        
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background-color: #333;
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+
+        /* Iconos para los botones */
+        .button::after {
+            font-family: Arial;
+            margin-left: 8px;
+        }
+
+        .button-message::after {
+            content: "📋";
+        }
+
+        .button-exit::after {
+            content: "↪";
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen">
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <div class="w-64 bg-black text-white p-6 space-y-6">
+            <div class="text-xl font-bold">Panel Admin</div>
+            <nav class="space-y-4">
+                <a href="#" class="block py-2.5 px-4 rounded bg-gray-800" onclick="showInbox(); return false">Bandeja de entrada</a>
+                <a href="#" class="block py-2.5 px-4 rounded hover:bg-gray-800" onclick="showComposeEmail(); return false">Enviar</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 h-full">
+                <!-- Inbox Section -->
+                <div id="inboxSection">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold">Bandeja de entrada</h1>
+                    </div>
+
+                   <!-- Email List -->
+<div class="space-y-4 mb-6">
+    <!-- Email Item 1 -->
+    <div class="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onclick="showEmailContent(1)">
+        <div class="flex-1">
+            <div class="flex justify-between">
+                <span class="font-semibold" data-id="correo-1"></span>  <!-- Usamos data-id en lugar de ID -->
+            </div>
+            <div class="text-gray-600" data-id="mensaje-1"></div>  <!-- Usamos data-id en lugar de ID -->
+        </div>
+    </div>
+    <!-- Puedes agregar más elementos con diferentes valores para data-id -->
+</div>
+
+
+                       
+
+                        <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800">
+                                ver
+                            </button>
+                    </div>
+</div>
+</div></div>
+</div>
+                <!-- Compose Email Section (Initially Hidden) -->
+                <div id="composeSection" class="hidden">
+                    <h2 class="text-xl font-bold mb-4">Nuevo mensaje</h2>
+                    <form id="emailForm" onsubmit="sendEmail(event)" class="space-y-4">
+                        <div>
+                            <input type="email" id="emailTo" placeholder="Para:" required
+                                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                        <div>
+                            <input type="text" id="emailSubject" placeholder="Asunto:" required
+                                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
+                        </div>
+                        <div>
+                            <textarea id="emailBody" rows="6" required
+                                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                                placeholder="Escribe tu mensaje aquí..."></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800">
+                                Enviar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="button-container">
+        <a href="manager.html" class="button button-message">Ordenes</a>
+        <a href="index.html" class="button button-exit">Salir</a>
+    </div>
+
+
+
+
+
+
+
+
+<script>
+    async function fetchEmailContent() {
+        try {
+            const response = await fetch('/obtener-mensajes', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+
+            const data = await response.json();
+
+            if (data.success && Array.isArray(data.mensajes)) {
+                return data.mensajes.map(mensaje => ({
+                    correo: mensaje.correo,
+                    contenido: mensaje.contenido_correo
+                }));
+            } else {
+                console.error('Error al obtener los mensajes:', data.message || 'Datos mal formateados');
+                return [];
+            }
+        } catch (error) {
+            console.error('Error al comunicarse con el servidor:', error);
+            return [];
+        }
+    }
+
+    // Función para mostrar los mensajes en el DOM
+    async function showEmailContent() {
+        const inboxSection = document.getElementById('inboxSection');
+        const mensajes = await fetchEmailContent();
+
+        if (mensajes.length > 0) {
+            // Limpiar contenido previo
+            inboxSection.innerHTML = '';
+
+            // Renderizar los mensajes con data-id dinámico
+            mensajes.forEach((mensaje, index) => {
+                inboxSection.innerHTML += `
+                    <div class="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onclick="showMessageDetails(${index})">
+                        <div class="flex-1">
+                            <div class="flex justify-between">
+                                <span class="font-semibold" data-id="correo-${index}">${mensaje.correo}</span>
+                            </div>
+                            <div class="text-gray-600" data-id="mensaje-${index}">${mensaje.contenido}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            inboxSection.innerHTML = '<p>No hay mensajes disponibles.</p>';
+        }
+    }
+
+    // Función para manejar clics en los correos y mostrar detalles
+    function showMessageDetails(index) {
+        const correoElement = document.querySelector(`[data-id="correo-${index}"]`);
+        const mensajeElement = document.querySelector(`[data-id="mensaje-${index}"]`);
+
+        alert(`Correo: ${correoElement.textContent}\nMensaje: ${mensajeElement.textContent}`);
+    }
+
+    // Agregar evento al botón para mostrar los mensajes cuando se haga clic
+    document.querySelector('button[type="submit"]').addEventListener('click', (event) => {
+        event.preventDefault();
+        showEmailContent();  // Llamar la función para mostrar el contenido de los mensajes
+    });
+</script>
+
+
+
+    
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Órdenes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: white;
+            padding: 2rem;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #22c55e;
+        }
+
+        .earnings-card {
+            background: linear-gradient(to right, #22c55e, #16a34a);
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: white;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .earnings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .earnings-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .earnings-amount {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .orders-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .order-card {
+            background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .order-header {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .order-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .order-total {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #22c55e;
+        }
+
+        .order-detail {
+            margin-bottom: 1rem;
+        }
+
+        .detail-label {
+            color: #a3a3a3;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            font-weight: 500;
+        }
+
+
+
+
+
+
+
+                .button-container {
+            display: flex;
+            gap: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        }
+        
+        .button {
+            padding: 15px 35px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+        
+        .button:hover::before {
+            left: 100%;
+        }
+        
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background-color: #333;
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+
+        /* Iconos para los botones */
+        .button::after {
+            font-family: Arial;
+            margin-left: 8px;
+        }
+
+        .button-message::after {
+            content: "✉";
+        }
+
+        .button-exit::after {
+            content: "↪";
+        }
+    </style>
+</head>
+<body>
+    
+
+    <div class="earnings-card">
+        <div class="earnings-header">
+            <div>
+                <div class="earnings-title">Ganancias Totales</div>
+                <div style="color: rgba(255,255,255,0.8)">Total de todas las órdenes</div>
+            </div>
+            <div class="earnings-amount" id="totalEarnings">$0</div>
+        </div>
+    </div>
+
+    <div class="orders-container" id="ordersContainer">
+        <!-- Las órdenes se insertarán aquí mediante JavaScript -->
+    </div>
+
+
+     <div class="button-container">
+        <a href="mensajes.html" class="button button-message">Mensajes</a>
+        <a href="index.html" class="button button-exit">Salir</a>
+    </div>
+
+<script>
+async function fetchEmailContent() {
+    try {
+        const response = await fetch('/obtener-mensajes', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error en la respuesta del servidor');
+        }
+
+        const data = await response.json();
+        
+        // Imprimir la respuesta para depuración
+        console.log(data); // Esto te permitirá ver qué datos llegan desde el servidor
+
+        // Verificar que los datos tienen la forma correcta
+        if (data.success && Array.isArray(data.mensajes)) {
+            return data.mensajes.map(mensaje => ({
+                correo: mensaje.correo,
+                contenido: mensaje.contenido_correo
+            }));
+        } else {
+            console.error('Error al obtener los mensajes:', data.message || 'Datos mal formateados');
+            return [];
+        }
+    } catch (error) {
+        console.error('Error al comunicarse con el servidor:', error);
+        return [];
+    }
+}
+
+</script>
+
+
+
+
+
+
+<script>
+        function showInbox() {
+            document.getElementById('inboxSection').style.display = 'block';
+            document.getElementById('composeSection').style.display = 'none';
+            closeEmail();
+        }
+
+        function showComposeEmail() {
+            document.getElementById('inboxSection').style.display = 'none';
+            document.getElementById('composeSection').style.display = 'block';
+        }
+
+        function showEmailContent(id) {
+            closeEmail();
+            document.getElementById('emailContent' + id).style.display = 'block';
+        }
+
+        function closeEmail() {
+            document.getElementById('emailContent1').style.display = 'none';
+            document.getElementById('emailContent2').style.display = 'none';
+        }
+
+        function sendEmail(event) {
+            event.preventDefault();
+            const to = document.getElementById('emailTo').value;
+            const subject = document.getElementById('emailSubject').value;
+            const body = document.getElementById('emailBody').value;
+            
+            alert(`Mensaje enviado a: ${to}\nAsunto: ${subject}`);
+            
+            // Limpiar el formulario
+            document.getElementById('emailForm').reset();
+            showInbox();
+        }
+
+        // Mostrar bandeja de entrada al cargar
+        showInbox();
+    </script>
+
+
+
+</body>
+</html>
