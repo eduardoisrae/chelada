@@ -10,10 +10,13 @@ const config = {
         user: 'mir_8hw2_user',
         password: '1wLd6OGwnQMpgUofTODwlNEbtIlBkQUX',
         database: 'mir_8hw2',
-        port: 5432,  // Solo esta línea
+        port: 5432,
         ssl: {
-            rejectUnauthorized: false
-        }
+            rejectUnauthorized: false,
+            sslmode: 'require'
+        },
+        connectionTimeoutMillis: 5000, // Timeout de conexión
+        idleTimeoutMillis: 30000      // Timeout de inactividad
     }
 };
 
