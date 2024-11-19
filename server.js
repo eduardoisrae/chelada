@@ -7,22 +7,37 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-// Configurar la conexión a PostgreSQL
+// Configurar la conexión a PostgreSQL con mejor manejo de errores
 const pool = new Pool(config.db);
 
-pool.connect((err, client, done) => {
-    if (err) {
-        console.error('Error al conectar con la base de datos:', err);
-    } else {
+// Mejor manejo de la conexión inicial
+const initializeDatabase = async () => {
+    try {
+        const client = await pool.connect();
         console.log('Conexión exitosa con la base de datos');
+        client.release();
+    } catch (err) {
+        console.error('Error al conectar con la base de datos:', err);
     }
-    // Siempre llamar a 'done' para liberar el cliente.
-    done();
+};
+
+initializeDatabase();
+
+// Middleware para verificar el estado de la conexión
+app.use(async (req, res, next) => {
+    try {
+        const client = await pool.connect();
+        client.release();
+        next();
+    } catch (err) {
+        console.error('Error de conexión:', err);
+        res.status(500).json({ message: 'Error de conexión con la base de datos' });
+    }
 });
 
-// Ruta de registro (ya existente en tu código)
+// Tus rutas existentes comienzan aquí
 app.post('/register', async (req, res) => {
-    console.log('Datos recibidos:', req.body); // Para depuración
+    console.log('Datos recibidos:', req.body);
 
     const { nombre, contrasena } = req.body;
     
@@ -33,7 +48,6 @@ app.post('/register', async (req, res) => {
     }
 
     try {
-        // Verificar si el usuario ya existe
         const userCheck = await pool.query(
             'SELECT * FROM usuarios WHERE nombre = $1',
             [nombre]
@@ -45,11 +59,9 @@ app.post('/register', async (req, res) => {
             });
         }
 
-        // Encriptar la contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(contrasena, saltRounds);
 
-        // Insertar el nuevo usuario
         const result = await pool.query(
             'INSERT INTO usuarios (nombre, contrasena) VALUES ($1, $2) RETURNING id_usuario',  
             [nombre, hashedPassword]
@@ -69,29 +81,24 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// Ruta de inicio de sesión (modificada)
 app.post('/login', async (req, res) => {
     const { nombre, contrasena } = req.body;
 
-
-        // Verificar si se reciben los datos
-    console.log('Datos recibidos:', req.body); // Imprimir datos para ver si están llegando correctamente
+    console.log('Datos recibidos:', req.body);
 
     if (!nombre || !contrasena) {
         return res.status(400).json({ message: 'Nombre y contraseña son requeridos' });
     }
 
-    // Comprobación rápida para usuarios específicos
     if (['ale', 'oscar', 'eduardo'].includes(nombre) && contrasena === 'enchiladamir') {
         return res.status(200).json({
             success: true,
             message: 'Inicio de sesión exitoso, redirigiendo a manager...',
-            redirect: 'manager.html' // Redirigir a manager.html
+            redirect: 'manager.html'
         });
     }
 
     try {
-        // Verificar si el usuario existe
         const userCheck = await pool.query('SELECT * FROM usuarios WHERE nombre = $1', [nombre]);
 
         if (userCheck.rows.length === 0) {
@@ -100,24 +107,21 @@ app.post('/login', async (req, res) => {
 
         const user = userCheck.rows[0];
 
-        // Verificar la contraseña
         const match = await bcrypt.compare(contrasena, user.contrasena);
         if (!match) {
             return res.status(400).json({ message: 'Contraseña incorrecta' });
         }
 
-        // Si la verificación es exitosa, enviar respuesta positiva con redirección a sesion.html
         res.status(200).json({
             success: true,
             message: 'Inicio de sesión exitoso',
-            redirect: 'sesion.html' // Redirigir a sesion.html
+            redirect: 'sesion.html'
         });
     } catch (error) {
         console.error('Error al verificar el login:', error);
         res.status(500).json({ message: 'Error al iniciar sesión' });
     }
 });
-
 
 app.post('/send-message', async (req, res) => {
     const { correo, contenido_correo } = req.body;
@@ -129,7 +133,6 @@ app.post('/send-message', async (req, res) => {
     }
 
     try {
-        // Insertar el mensaje en la base de datos
         const result = await pool.query(
             'INSERT INTO mensajes (correo, contenido_correo) VALUES ($1, $2) RETURNING id_mensaje',
             [correo, contenido_correo]
@@ -148,32 +151,24 @@ app.post('/send-message', async (req, res) => {
     }
 });
 
-
-
-
-
 app.post('/confirmar-pedido', async (req, res) => {
     const { id_usuario, total, nombre, direccion, telefono, pedido } = req.body;
 
-    // Verificar que los datos estén completos
     if (!id_usuario || !total || !nombre || !direccion || !telefono || !pedido) {
         return res.status(400).json({ success: false, message: 'Faltan datos en el pedido' });
     }
 
     try {
-        // Limpia el valor de "total" para eliminar caracteres no numéricos
         const totalLimpio = parseFloat(total.toString().replace(/[^0-9.]/g, ''));
         if (isNaN(totalLimpio)) {
             return res.status(400).json({ success: false, message: 'El total es inválido' });
         }
 
-        // Insertar los datos del pedido en la tabla "ordenes"
         const result = await pool.query(
             'INSERT INTO ordenes (id_usuario, total, nombre, direccion, telefono, pedido) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_orden',
             [id_usuario, totalLimpio, nombre, direccion, telefono, pedido]
         );
 
-        // Responder al cliente con éxito
         res.status(200).json({ success: true, message: 'Pedido confirmado correctamente' });
     } catch (error) {
         console.error('Error al guardar el pedido:', error);
@@ -181,15 +176,11 @@ app.post('/confirmar-pedido', async (req, res) => {
     }
 });
 
-
-// Ruta para obtener las órdenes
 app.get('/obtener-ordenes', async (req, res) => {
     try {
-        // Consulta para obtener todas las órdenes de la tabla
         const query = 'SELECT id_orden, nombre, direccion, telefono, pedido, total FROM ordenes;';
         const result = await pool.query(query);
 
-        // Enviar los datos como respuesta
         res.status(200).json({
             success: true,
             orders: result.rows,
@@ -203,10 +194,9 @@ app.get('/obtener-ordenes', async (req, res) => {
     }
 });
 
-
 app.delete('/eliminar-orden', async (req, res) => {
     try {
-        const { id_orden } = req.body; // Recibe el ID de la orden a eliminar
+        const { id_orden } = req.body;
         if (!id_orden) {
             return res.status(400).json({ success: false, message: 'El ID de la orden es obligatorio.' });
         }
@@ -221,19 +211,16 @@ app.delete('/eliminar-orden', async (req, res) => {
     }
 });
 
-
-
 app.get('/obtener-mensajes', async (req, res) => {
     try {
         const query = 'SELECT correo, contenido_correo FROM mensajes;';
         const result = await pool.query(query);
 
-        // Imprimir los datos para depuración
-        console.log(result.rows);  // Verifica la estructura de los datos
+        console.log(result.rows);
 
         res.status(200).json({
             success: true,
-            mensajes: result.rows,  // Asegúrate de que los datos están bajo el campo 'mensajes'
+            mensajes: result.rows,
         });
     } catch (error) {
         console.error('Error al obtener los mensajes:', error);
@@ -244,16 +231,34 @@ app.get('/obtener-mensajes', async (req, res) => {
     }
 });
 
+// Manejo de errores general
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Error interno del servidor'
+    });
+});
 
-
-
-
-
-
-
-
-// Iniciar el servidor en el puerto 3003
+// Configuración del puerto para Render
 const PORT = process.env.PORT || 3003;
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+});
+
+// Keep-alive para evitar timeouts
+setInterval(() => {
+    pool.query('SELECT 1')
+        .catch(err => console.error('Error en keep-alive:', err));
+}, 60000);
+
+// Manejo graceful de cierre
+process.on('SIGTERM', () => {
+    console.log('SIGTERM recibido. Cerrando servidor...');
+    server.close(() => {
+        pool.end(() => {
+            console.log('Conexiones de base de datos cerradas');
+            process.exit(0);
+        });
+    });
 });
